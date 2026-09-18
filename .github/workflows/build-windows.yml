@@ -16,6 +16,11 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
       - name: Setup dependencies
         uses: ./.github/actions/setup-dependencies
         with:
@@ -23,17 +28,12 @@ jobs:
           build-type: Release
 
       - name: Configure
-        shell: powershell
+        shell: cmd
         run: |
-          $env:CC = "cl"
-          $env:CXX = "cl"
-
-          cmake --preset windows_msvc `
-            -DCMAKE_C_COMPILER=cl `
-            -DCMAKE_CXX_COMPILER=cl
+          cmake --preset windows_msvc
 
       - name: Build
-        shell: powershell
+        shell: cmd
         run: |
           cmake --build --preset windows_msvc --config Release
 
