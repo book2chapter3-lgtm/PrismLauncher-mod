@@ -1,0 +1,84 @@
+name: Build PrismLauncher Windows
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - develop
+
+jobs:
+  build:
+    runs-on: windows-2022
+
+    steps:
+      - name: Télécharger le code
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Installer Qt
+        uses: jurplel/setup-qt-action@v4
+        with:
+          version: '6.8.3'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_msvc2022_64'
+
+      - name: Vérifier les outils
+        shell: powershell
+        run: |
+          cmake --version
+          ninja --version
+          qmake --version
+
+      - name: Configurer CMake
+        shell: powershell
+        run: |
+          cmake --preset windows_msvc
+
+      - name: Compiler PrismLauncher
+        shell: powershell
+        run: |
+          cmake --build --preset windows_msvc --config Release
+
+      - name: Trouver PrismLauncher.exe
+        shell: powershell
+        run: |
+          Get-ChildItem -Path build -Recurse -Filter PrismLauncher.exe
+
+      - name: Préparer le dossier
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force -Path artifact
+
+          $exe = Get-ChildItem -Path build -Recurse -Filter PrismLauncher.exe |
+                 Select-Object -First 1
+
+          if (-not $exe) {
+              Write-Error "PrismLauncher.exe introuvable"
+              exit 1
+          }
+
+          Copy-Item $exe.FullName artifact\PrismLauncher.exe
+
+      - name: Ajouter les DLL Qt
+        shell: powershell
+        run: |
+          windeployqt `
+            --release `
+            --no-translations `
+            artifact\PrismLauncher.exe
+
+      - name: Créer le ZIP
+        shell: powershell
+        run: |
+          Compress-Archive `
+            -Path artifact\* `
+            -DestinationPath PrismLauncher-Windows.zip
+
+      - name: Télécharger le build
+        uses: actions/upload-artifact@v4
+        with:
+          name: PrismLauncher-Windows
+          path: PrismLauncher-Windows.zip
