@@ -37,25 +37,10 @@ jobs:
         run: |
           cmake --build --preset windows_msvc --config Release
 
-      - name: Find PrismLauncher
-        shell: powershell
+      - name: Install PrismLauncher
+        shell: cmd
         run: |
-          Get-ChildItem -Path build -Recurse -Filter PrismLauncher.exe
-
-      - name: Prepare artifact
-        shell: powershell
-        run: |
-          New-Item -ItemType Directory -Force -Path artifact
-
-          $exe = Get-ChildItem -Path build -Recurse -Filter PrismLauncher.exe |
-                 Select-Object -First 1
-
-          if (-not $exe) {
-              Write-Error "PrismLauncher.exe introuvable"
-              exit 1
-          }
-
-          Copy-Item $exe.FullName artifact\PrismLauncher.exe
+          cmake --install build --config Release --prefix artifact
 
       - name: Create ZIP
         shell: powershell
