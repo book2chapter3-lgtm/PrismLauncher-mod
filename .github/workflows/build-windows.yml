@@ -5,49 +5,38 @@ on:
   push:
     branches:
       - main
-      - develop
 
 jobs:
   build:
     runs-on: windows-2022
 
     steps:
-      - name: Télécharger le code
+      - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: true
+          submodules: recursive
 
-      - name: Installer Qt
-        uses: jurplel/setup-qt-action@v4
+      - name: Setup dependencies
+        uses: ./.github/actions/setup-dependencies
         with:
-          version: '6.8.3'
-          host: 'windows'
-          target: 'desktop'
-          arch: 'win64_msvc2022_64'
+          qt-version: '6.8.3'
 
-      - name: Vérifier les outils
-        shell: powershell
-        run: |
-          cmake --version
-          ninja --version
-          qmake --version
-
-      - name: Configurer CMake
+      - name: Configure
         shell: powershell
         run: |
           cmake --preset windows_msvc
 
-      - name: Compiler PrismLauncher
+      - name: Build
         shell: powershell
         run: |
           cmake --build --preset windows_msvc --config Release
 
-      - name: Trouver PrismLauncher.exe
+      - name: Find PrismLauncher
         shell: powershell
         run: |
           Get-ChildItem -Path build -Recurse -Filter PrismLauncher.exe
 
-      - name: Préparer le dossier
+      - name: Prepare artifact
         shell: powershell
         run: |
           New-Item -ItemType Directory -Force -Path artifact
@@ -62,22 +51,14 @@ jobs:
 
           Copy-Item $exe.FullName artifact\PrismLauncher.exe
 
-      - name: Ajouter les DLL Qt
-        shell: powershell
-        run: |
-          windeployqt `
-            --release `
-            --no-translations `
-            artifact\PrismLauncher.exe
-
-      - name: Créer le ZIP
+      - name: Create ZIP
         shell: powershell
         run: |
           Compress-Archive `
             -Path artifact\* `
             -DestinationPath PrismLauncher-Windows.zip
 
-      - name: Télécharger le build
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: PrismLauncher-Windows
