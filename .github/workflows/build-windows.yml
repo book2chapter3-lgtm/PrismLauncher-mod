@@ -20,11 +20,17 @@ jobs:
         uses: ./.github/actions/setup-dependencies
         with:
           qt-version: '6.8.3'
+          build-type: Release
 
       - name: Configure
         shell: powershell
         run: |
-          cmake --preset windows_msvc
+          $env:CC = "cl"
+          $env:CXX = "cl"
+
+          cmake --preset windows_msvc `
+            -DCMAKE_C_COMPILER=cl `
+            -DCMAKE_CXX_COMPILER=cl
 
       - name: Build
         shell: powershell
